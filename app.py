@@ -7,7 +7,7 @@ from streamlit_gsheets import GSheetsConnection
 st.set_page_config(page_title="Wafra Store Dashboard", layout="wide", page_icon="📊")
 
 st.title("🚀 لوحة تحكم أداء Wafra Store")
-st.markdown(f"**رابط المصدر:** [Google Sheets]({'https://docs.google.com/spreadsheets/d/1Vh8dCL8DCR93ZPah-itG06dk_i9WgJ5LtF_TmvcARbQ/edit?usp=sharing'})")
+st.markdown(f"**رابط المصدر:** [Google Sheets]({'SHEET_URL = "https://docs.google.com/spreadsheets/d/1Vh8dCL8DCR93ZPah-itG06dk_i9WgJ5LtF_TmvcARbQ/"'})")
 st.markdown("---")
 
 # 2. إنشاء الاتصال بجوجل شيت
@@ -81,3 +81,4 @@ try:
 except Exception as e:
     st.error(f"⚠️ خطأ في قراءة البيانات: {e}")
     st.info("تأكد من أن أسماء أوراق العمل (Tabs) هي 'Taager_Data' و 'Dashboard' بالضبط.")
+
