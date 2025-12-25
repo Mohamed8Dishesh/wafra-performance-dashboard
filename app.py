@@ -25,10 +25,14 @@ def check_password():
         return True
 
 if check_password():
-    # 2. إعدادات الروابط (تأتي من Secrets للأمان)
+    # 2. إعدادات الروابط
     SHEET_ID = "1Vh8dCL8DCR93ZPah-itG06dk_i9WgJ5LtF_TmvcARbQ"
     URL_TAAGER = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Taager_Data"
     URL_SPEND = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Dashboard"
+
+    # دالة لتنظيف الأرقام من الفواصل والنصوص
+    def to_float(column):
+        return pd.to_numeric(column.astype(str).str.replace(',', '').str.strip(), errors='coerce').fillna(0)
 
     def clean_percentage(value):
         if pd.isna(value) or value == "": return 0.0
@@ -46,15 +50,22 @@ if check_password():
         df_taager = pd.read_csv(URL_TAAGER)
         df_spend = pd.read_csv(URL_SPEND)
 
-        # دمج البيانات بناءً على كود المنتج
+        # دمج البيانات
         df = pd.merge(df_taager, df_spend[['كود المنتج', 'صرف الفيسبوك']], on='كود المنتج', how='inner')
 
-        # معالجة العملات والنسب
+        # --- تنظيف الأرقام الحاسم لمنع الخطأ ---
+        df['مجموع_الارباح_التي_تم_توصيلها'] = to_float(df['مجموع_الارباح_التي_تم_توصيلها'])
+        df['صرف الفيسبوك'] = to_float(df['صرف الفيسبوك'])
+        df['عدد_القطع التي تم توصيلها بدون مرتجعات'] = to_float(df['عدد_القطع التي تم توصيلها بدون مرتجعات'])
+        
+        # معالجة النسب
         df['نسبة التأكيد'] = df['نسبة التأكيد'].apply(clean_percentage)
         df['نسبة التوصيل'] = df['نسبة التوصيل'].apply(clean_percentage)
+
+        # الحسابات المالية (الآن ستعمل بدون خطأ)
         EXCHANGE_RATE = 0.036
-        df['أرباح بالجنيه'] = df['مجموع_الارباح_التي_تم_توصيلها'].fillna(0) * EXCHANGE_RATE
-        df['صافي الربح'] = df['أرباح بالجنيه'] - df['صرف الفيسبوك'].fillna(0)
+        df['أرباح بالجنيه'] = df['مجموع_الارباح_التي_تم_توصيلها'] * EXCHANGE_RATE
+        df['صافي الربح'] = df['أرباح بالجنيه'] - df['صرف الفيسبوك']
         
         # حساب Net CPO
         df['Net CPO'] = df.apply(
@@ -80,13 +91,5 @@ if check_password():
             use_container_width=True
         )
 
-        # 6. الرسوم البيانية
-        c1, c2 = st.columns(2)
-        with c1:
-            st.plotly_chart(px.bar(df, x='اسم المنتج', y='صافي الربح', color='صافي الربح', 
-                                   title="صافي الربح لكل منتج", color_continuous_scale='RdYlGn'), use_container_width=True)
-        with c2:
-            st.plotly_chart(px.pie(df, values='صرف الفيسبوك', names='اسم المنتج', title="توزيع ميزانية الإعلانات"), use_container_width=True)
-
     except Exception as e:
-        st.error(f"⚠️ فشل في مزامنة البيانات: {e}")
+        st.error(f"⚠️ فشل في معالجة البيانات: {e}")
